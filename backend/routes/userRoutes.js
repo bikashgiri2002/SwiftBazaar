@@ -67,18 +67,27 @@ router.post("/login", async (req, res) => {
 router.post("/address/add", authenticateUser, async (req, res) => {
   try {
     const { street, city, state, zipCode, country } = req.body;
+    
     const user = await User.findById(req.userId);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
-    const newAddress = { street, city, state, zipCode, country };
-    user.addresses.push(newAddress);
+
+    // Create a new address document
+    const newAddress = new Address({ street, city, state, zipCode, country });
+    await newAddress.save();
+
+    // Push the address ID into the user's addresses array
+    user.addresses.push(newAddress._id);
     await user.save();
-    res.status(201).json({ message: "Address added successfully", user });
+
+    res.status(201).json({ message: "Address added successfully", address: newAddress });
   } catch (error) {
+    console.error("Error adding address:", error);
     res.status(500).json({ message: "Error adding address", error });
   }
 });
+
 
 // 📌 Add to Cart
 router.post("/cart/add", authenticateUser, async (req, res) => {
@@ -101,21 +110,52 @@ router.post("/cart/add", authenticateUser, async (req, res) => {
   }
 });
 
-// 📌 Remove from Cart
-router.delete("/cart/remove/:cartId/:productId", authenticateUser, async (req, res) => {
+// 📌 Get All Cart Items
+router.get("/cart/items", authenticateUser, async (req, res) => {
   try {
-    const { cartId, productId } = req.params;
+    const cart = await Cart.findOne({ user: req.userId }).populate("products.product");
+
+    if (!cart || cart.products.length === 0) {
+      return res.status(404).json({ message: "Cart is empty" });
+    }
+
+    res.status(200).json(cart);
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching cart items", error });
+  }
+});
+
+
+// 📌 Remove from Cart
+router.delete("/cart/remove/:cartId", authenticateUser, async (req, res) => {
+  try {
+    const { cartId } = req.params;
+    const { productId } = req.body; // Get productId from request body
+
+    if (!productId) {
+      return res.status(400).json({ message: "Product ID is required" });
+    }
+
     let cart = await Cart.findOne({ _id: cartId, user: req.userId });
+
     if (!cart) {
       return res.status(404).json({ message: "Cart not found" });
     }
+
+    const initialLength = cart.products.length;
     cart.products = cart.products.filter((p) => p.product.toString() !== productId);
+
+    if (cart.products.length === initialLength) {
+      return res.status(404).json({ message: "Product not found in cart" });
+    }
+
     await cart.save();
     res.status(200).json({ message: "Product removed from cart", cart });
   } catch (error) {
     res.status(500).json({ message: "Error removing from cart", error });
   }
 });
+
 
 // 📌 Place Order
 router.post("/order/place", authenticateUser, async (req, res) => {
@@ -173,6 +213,7 @@ router.get("/orders", authenticateUser, async (req, res) => {
 
     res.status(200).json(orders);
   } catch (error) {
+    console.error("Error fetching orders:", error); // Log the actual error
     res.status(500).json({ message: "Error fetching orders", error });
   }
 });
