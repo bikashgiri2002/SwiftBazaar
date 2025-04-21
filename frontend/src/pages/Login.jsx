@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom"; // Import Link
 import axios from "axios";
 
 function Login() {
@@ -16,9 +16,13 @@ function Login() {
     setError(""); // Clear previous errors
     try {
       console.log("Sending request with:", form);
-      const response = await axios.post("http://localhost:5000/api/users/login", form, {
-        headers: { "Content-Type": "application/json" },
-      });
+      const response = await axios.post(
+        "http://localhost:5000/api/users/login",
+        form,
+        {
+          headers: { "Content-Type": "application/json" },
+        }
+      );
 
       console.log("Login successful:", response.data);
       localStorage.setItem("userToken", response.data.token);
@@ -30,7 +34,9 @@ function Login() {
       navigate("/dashboard"); // Redirect after setting token
     } catch (err) {
       console.error("Login error:", err);
-      setError(err.response?.data?.message || "Login failed. Please try again.");
+      setError(
+        err.response?.data?.message || "Login failed. Please try again."
+      );
     }
   };
 
@@ -57,10 +63,20 @@ function Login() {
           className="w-full p-2 border rounded mb-2"
           required
         />
-        <button type="submit" className="w-full bg-green-500 text-white p-2 rounded">
+        <button
+          type="submit"
+          className="w-full bg-green-500 text-white p-2 rounded"
+        >
           Login
         </button>
       </form>
+      {/* Add this section for account creation link */}
+      <p className="text-center mt-4">
+        Don't have an account?{" "}
+        <Link to="/register" className="text-blue-500">
+          Create one here
+        </Link>
+      </p>
     </div>
   );
 }

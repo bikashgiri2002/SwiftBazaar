@@ -20,7 +20,9 @@ function Orders() {
         });
         setOrders(response.data);
       } catch (error) {
+        const errorMessage = error.response?.data?.message || "Error fetching orders. Please try again later.";
         console.error("Error fetching orders:", error.response?.data || error);
+        alert(errorMessage); // Display error message in alert
       }
     };
 
@@ -53,14 +55,17 @@ function Orders() {
             </div>
 
             {/* Order Details */}
-            <p className="text-gray-600 mt-2">Total Amount: <span className="font-bold text-gray-900">${order.totalAmount}</span></p>
+            <p className="text-gray-600 mt-2">
+              Total Amount: <span className="font-bold text-gray-900">${order.totalAmount}</span>
+            </p>
 
             {/* Products List */}
             <h4 className="mt-4 text-md font-semibold text-gray-800">🛍️ Products:</h4>
             <ul className="mt-2 space-y-1">
               {order.products.map((item) => (
                 <li key={item.product?._id || item.product} className="ml-4 text-gray-700">
-                  - {item.product?.name || "Product not found"} <span className="text-gray-500">x {item.quantity}</span>
+                  - {item.product?.name || "Product not found"}{" "}
+                  <span className="text-gray-500">x {item.quantity}</span>
                 </li>
               ))}
             </ul>
@@ -69,7 +74,8 @@ function Orders() {
             <h4 className="mt-4 text-md font-semibold text-gray-800">📍 Shipping Address:</h4>
             {order.address && typeof order.address === "object" ? (
               <p className="text-gray-700 mt-1">
-                {order.address.street}, {order.address.city}, {order.address.state}, {order.address.zipCode}, {order.address.country}
+                {order.address.street}, {order.address.city}, {order.address.state},{" "}
+                {order.address.zipCode}, {order.address.country}
               </p>
             ) : (
               <p className="text-gray-500">Address not available</p>
