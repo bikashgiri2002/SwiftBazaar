@@ -2,12 +2,17 @@ import express from "express";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import User from "../models/userModel.js";
 import Cart from "../models/cartModel.js";
 import Address from "../models/addressModel.js";
 import Order from "../models/orderModel.js";
 import Product from "../models/productModel.js";
-import { sendOTPEmail, sendConfirmationEmail } from "../utils/emailService.js";
+import {
+  sendOTPEmail,
+  sendConfirmationEmail,
+  sendPasswordResetEmail,
+} from "../utils/emailService.js";
 
 dotenv.config();
 const router = express.Router();
@@ -99,13 +104,14 @@ router.post("/verify-otp", async (req, res) => {
     await user.save();
     await sendConfirmationEmail(user.email, user.name); // Send confirmation email
     const token = generateToken(user);
-    
-    res.status(200).json({ user, token, message: "Email verified successfully" });
+
+    res
+      .status(200)
+      .json({ user, token, message: "Email verified successfully" });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
-
 
 // 📌 Login User
 router.post("/login", async (req, res) => {
@@ -120,6 +126,57 @@ router.post("/login", async (req, res) => {
     res.status(200).json({ user, token });
   } catch (error) {
     res.status(500).json({ message: "Error logging in", error });
+  }
+});
+
+// Forgot Password
+router.post("/forgot-password", async (req, res) => {
+  const { email } = req.body;
+  try {
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    const resetToken = crypto.randomBytes(32).toString("hex");
+    const resetTokenHash = crypto
+      .createHash("sha256")
+      .update(resetToken)
+      .digest("hex");
+    user.resetPasswordToken = resetTokenHash;
+    user.resetPasswordExpires = Date.now() + 1000 * 60 * 15;
+    await user.save();
+    const resetURL = `http://localhost:5173/reset-password/${resetToken}`;
+    await sendPasswordResetEmail(user.email, user.name, resetURL);
+    res.json({ message: "Reset password link sent to email." });
+  } catch (error) {
+    res.status(500).json({ message: "Error sending reset link", error });
+  }
+});
+
+// Reset Password using Token
+router.post("/reset-password/:token", async (req, res) => {
+  const { token } = req.params;
+  const { newPassword } = req.body;
+  const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+  try {
+    const user = await User.findOne({
+      resetPasswordToken: hashedToken,
+      resetPasswordExpires: { $gt: Date.now() },
+    });
+
+    if (!user) {
+      return res.status(400).json({ message: "Invalid or expired token" });
+    }
+
+    user.password = await bcrypt.hash(newPassword, 10);
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
+
+    await user.save();
+
+    res.json({ message: "Password reset successfully" });
+  } catch (error) {
+    res.status(500).json({ message: "Server Error", error });
   }
 });
 

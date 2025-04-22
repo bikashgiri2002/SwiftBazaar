@@ -10,7 +10,7 @@ import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Cart from "./pages/Cart";
 import AddAddress from "./pages/AddAddress";
-import Orders from "./pages/Orders"; // ✅ Import Orders page
+import Orders from "./pages/Orders";
 import Navbar from "./components/Navbar";
 import Logout from "./components/Logout";
 import Home from "./pages/Home";
@@ -19,6 +19,8 @@ import AdminDashboard from "./admin/AdminDashboard";
 import ManageCategories from "./admin/ManageCategories";
 import ManageProducts from "./admin/ManageProducts";
 import VerifyOtp from "./pages/VerifyOtp";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
+import ForgotPassword from "./pages/ForgotPassword";
 
 function App() {
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(
@@ -86,12 +88,12 @@ function App() {
               isUserAuthenticated ? <Orders /> : <Navigate to="/login" />
             }
           />
+          <Route path="/verify-otp/:email" element={<VerifyOtp />} />
           <Route
-            path="/verify-otp/:email"
-            element={
-              <VerifyOtp /> // ✅ Pass email as a prop to VerifyOtp component
-            }
+            path="/reset-password/:token"
+            element={<ResetPasswordPage />}
           />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
 
           {/* Admin Routes */}
           <Route

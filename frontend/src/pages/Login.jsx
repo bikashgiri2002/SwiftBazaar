@@ -77,6 +77,12 @@ function Login() {
           Create one here
         </Link>
       </p>
+      <p className="text-center mt-4">
+        Forgot your password?{" "}
+        <Link to="/forgot-password" className="text-blue-500">
+          Reset it here
+        </Link>
+      </p>
     </div>
   );
 }
